@@ -45,7 +45,7 @@ func NewBatcher[T, R any](batchSize int, maxWait time.Duration, p Processor[T, R
 // Submit pushes a request into the batch. Blocks until the batch is processed.
 func (b *Batcher[T, R]) Submit(ctx context.Context, input T) (R, error)
 
-// Stop gracefully shuts down the batcher, flushing remaining items.
+// Stop gracefully shuts down the batcher and drains unprocessed requests.
 func (b *Batcher[T, R]) Stop()
 ```
 
@@ -53,7 +53,7 @@ func (b *Batcher[T, R]) Stop()
 
 | Example | Directory | Description |
 |---------|-----------|-------------|
-| CGO batching | `example/go-in-zig/` | Go → CGO → Zig profit-split engine, `zg build run` |
+| CGO batching | `example/go-in-zig/` | Go → CGO → Zig profit-split engine, `zig build run` |
 | Game server | `example/game-update/` | Player state update: Submit only userId, processor queries latest DB state |
 
 ## Design
