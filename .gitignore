@@ -1,0 +1,23 @@
+```
+# Patch files
+*.diff
+*.diff.b64
+```
+
+.zig-cache
+zig-out
+zig-pkg
+
+*.bak*
+
+.skills
+
+*.exe
+
+go.work
+go.work.sum
+
+# OS
+.DS_Store
+Thumbs.db
+
