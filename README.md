@@ -62,7 +62,7 @@ func (b *Batcher[T, R]) Stop()
 - **Panic-safe**: processor panics are captured and returned as errors to each submitter.
 - **Stop-safe**: `Stop()` marks the batcher closed, `Submit()` returns `ErrBatcherClosed`.
 - **Generic**: `Batcher[OrderRequest, ProfitResult]` is self-documenting — no `interface{}` casting.
-- **Independent context**: processor runs with `context.Background()`, not the first request's context.
+- **Cancelable context**: processor receives the batcher's lifecycle context, canceled by `Stop()` — not the first request's context.
 
 ## When to Use
 
