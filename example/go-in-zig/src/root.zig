@@ -36,8 +36,6 @@ const RATE_PICKUP_DISCOUNT = 30; // 自取优惠 0.3%
 
 // ── Main export: batch profit splitting ──
 export fn zig_split_profits(input_ptr: [*]OrderRequest, output_ptr: [*]ProfitResult, count: usize) void {
-    var i: usize = 0;
-
     // Choose fastest path: block or straight
     if (count >= 64) {
         // Large batch: split into 64-element chunks
@@ -80,22 +78,22 @@ fn split_one(req: OrderRequest) ProfitResult {
     if (is_vip)  { platform_rate = RATE_PLATFORM_VIP; }
     if (is_group){ platform_rate += 20; } // 拼单额外 0.2%
 
-    const platform_share: i64 = (revenue * platform_rate) / 10000;
-    const payment_fee: i64 = (revenue * RATE_PAYMENT) / 10000;
+    const platform_share: i64 = @divTrunc(revenue * platform_rate, 10000);
+    const payment_fee: i64 = @divTrunc(revenue * RATE_PAYMENT, 10000);
 
     // ----- Step 3: 门店分润 -----
     var shop_rate: i64 = req.shop_rate_bps;
     if (is_pickup){ shop_rate += RATE_PICKUP_DISCOUNT; } // 自取多给门店
-    const shop_share: i64 = (revenue * shop_rate) / 10000;
+    const shop_share: i64 = @divTrunc(revenue * shop_rate, 10000);
 
     // ----- Step 4: 推荐人分润 -----
-    const affiliate_share: i64 = (revenue * req.affiliate_rate_bps) / 10000;
+    const affiliate_share: i64 = @divTrunc(revenue * req.affiliate_rate_bps, 10000);
 
     // ----- Step 5: 净利润 = 实收 - 平台 - 支付通道 - 门店 - 推荐人 -----
     const net_profit: i64 = revenue - platform_share - payment_fee - shop_share - affiliate_share;
 
     // ----- Step 6: 综合费率 -----
-    const effective_rate: i64 = if (revenue > 0) (platform_share + payment_fee) * 10000 / revenue else 0;
+    const effective_rate: i64 = if (revenue > 0) @divTrunc((platform_share + payment_fee) * 10000, revenue) else 0;
 
     // ----- Step 7: 结果标志 -----
     var flags: i64 = 0;

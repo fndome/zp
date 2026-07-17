@@ -5,28 +5,30 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // ── Step 1: Build Zig shared library → zig-out/lib/go_in_zig.dll ──
-    const lib = b.addSharedLibrary(.{
+    const lib = b.addLibrary(.{
         .name = "go_in_zig",
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/root.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        }),
     });
-    lib.linkLibC();
-    b.installArtifact(lib);
+    const install_lib = b.addInstallArtifact(lib, .{});
 
     // ── Step 2: Build Go binary that links to the Zig library ──
     const go_build = b.addSystemCommand(&[_][]const u8{
         "go", "build",
         "-o", "zig-out/bin/go_in_zig_project.exe",
-        "main.go",
+        ".",
     });
-    go_build.addEnvVar("CGO_ENABLED", "1");
-    go_build.addEnvVar("CGO_CFLAGS", "-Izig-out/include");
-    go_build.addEnvVar("CGO_LDFLAGS", "-Lzig-out/lib -lgo_in_zig");
+    go_build.setEnvironmentVariable("CGO_ENABLED", "1");
+    go_build.setEnvironmentVariable("CGO_CFLAGS", "-Izig-out/include");
+    go_build.setEnvironmentVariable("CGO_LDFLAGS", "-Lzig-out/lib -lgo_in_zig");
 
     // Go build must run after Zig library is installed
-    const install_step = b.getInstallStep();
-    go_build.step.dependOn(install_step);
+    go_build.step.dependOn(&install_lib.step);
 
     // ── Step 3: Custom "run" step: zig build run ──
     const run_cmd = b.addSystemCommand(&[_][]const u8{

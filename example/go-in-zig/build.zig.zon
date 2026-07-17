@@ -1,7 +1,7 @@
 .{
-    .name = "go-in-zig",
+    .name = .go_in_zig,
     .version = "0.1.0",
-    .fingerprint = 0x0000000000000001,
+    .fingerprint = 0xa645925367c70b25,
     .minimum_zig_version = "0.14.0",
     .dependencies = .{},
     .paths = .{
