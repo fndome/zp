@@ -80,3 +80,42 @@ func TestSubmitAfterStop(t *testing.T) {
 		t.Fatalf("err = %v, want ErrBatcherClosed", err)
 	}
 }
+
+func TestStopCancelsInflightProcessor(t *testing.T) {
+	started := make(chan struct{})
+	b := NewBatcher(2, time.Hour, func(ctx context.Context, batch []int) ([]int, error) {
+		close(started)
+		<-ctx.Done()
+		return nil, ctx.Err()
+	})
+
+	errCh := make(chan error, 2)
+	for i := 0; i < 2; i++ {
+		go func(v int) {
+			_, err := b.Submit(context.Background(), v)
+			errCh <- err
+		}(i)
+	}
+
+	<-started
+	stopped := make(chan struct{})
+	go func() {
+		b.Stop()
+		close(stopped)
+	}()
+
+	select {
+	case <-stopped:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Stop did not cancel in-flight processor")
+	}
+
+	select {
+	case err := <-errCh:
+		if err == nil {
+			t.Fatal("expected error from canceled processor, got nil")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Submit did not return after Stop")
+	}
+}

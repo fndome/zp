@@ -30,6 +30,9 @@ type Batcher[T any, R any] struct {
 	stopOnce sync.Once
 	stopChan chan struct{}
 	wg       sync.WaitGroup
+
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 var (
@@ -45,12 +48,15 @@ func NewBatcher[T any, R any](batchSize int, maxWait time.Duration, processor Pr
 		panic("zp.NewBatcher: maxWait must be > 0")
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	b := &Batcher[T, R]{
 		pending:   make(chan pendingReq[T, R], batchSize*10),
 		processor: processor,
 		batchSize: batchSize,
 		maxWait:   maxWait,
 		stopChan:  make(chan struct{}),
+		ctx:       ctx,
+		cancel:    cancel,
 	}
 	b.wg.Add(1)
 	go b.run()
@@ -107,6 +113,7 @@ func (b *Batcher[T, R]) Submit(ctx context.Context, input T) (R, error) {
 func (b *Batcher[T, R]) Stop() {
 	b.stopOnce.Do(func() {
 		b.closed.Store(true)
+		b.cancel()
 		close(b.stopChan)
 	})
 	b.wg.Wait()
@@ -214,8 +221,7 @@ func (b *Batcher[T, R]) flush(batch []pendingReq[T, R]) {
 		inputs[i] = req.input
 	}
 
-	ctx := context.Background()
-	results, err := b.processor(ctx, inputs)
+	results, err := b.processor(b.ctx, inputs)
 
 	if err != nil {
 		for _, req := range batch {
