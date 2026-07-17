@@ -167,6 +167,9 @@ func (b *Batcher[T, R]) run() {
 		// accumulating: wait for more requests or timeout
 		select {
 		case <-b.stopChan:
+			if timer != nil {
+				timer.Stop()
+			}
 			if len(batch) > 0 {
 				b.flush(batch)
 			}
