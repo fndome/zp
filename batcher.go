@@ -152,10 +152,7 @@ func (b *Batcher[T, R]) run() {
 			select {
 			case <-b.stopChan:
 				return
-			case req, ok := <-b.pending:
-				if !ok {
-					return
-				}
+			case req := <-b.pending:
 				batch = append(batch, req)
 				if len(batch) >= b.batchSize {
 					b.flush(batch)
@@ -175,13 +172,7 @@ func (b *Batcher[T, R]) run() {
 			}
 			return
 
-		case req, ok := <-b.pending:
-			if !ok {
-				if len(batch) > 0 {
-					b.flush(batch)
-				}
-				return
-			}
+		case req := <-b.pending:
 			batch = append(batch, req)
 
 			if len(batch) >= b.batchSize {
