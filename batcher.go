@@ -67,6 +67,9 @@ func (b *Batcher[T, R]) Submit(ctx context.Context, input T) (R, error) {
 
 	select {
 	case b.pending <- pendingReq[T, R]{input: input, result: resultCh}:
+	case <-b.stopChan:
+		var zero R
+		return zero, ErrBatcherClosed
 	case <-ctx.Done():
 		var zero R
 		return zero, ctx.Err()
@@ -82,6 +85,22 @@ func (b *Batcher[T, R]) Submit(ctx context.Context, input T) (R, error) {
 	case <-ctx.Done():
 		var zero R
 		return zero, ctx.Err()
+	case <-b.stopChan:
+		// closing: the request was either flushed before run() exited,
+		// or it is stuck in pending and will never be processed.
+		// wait for run() to finish, then check for a delivered result.
+		b.wg.Wait()
+		select {
+		case res, ok := <-resultCh:
+			if !ok {
+				var zero R
+				return zero, ErrBatcherClosed
+			}
+			return res.Value, res.Err
+		default:
+			var zero R
+			return zero, ErrBatcherClosed
+		}
 	}
 }
 
