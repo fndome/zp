@@ -157,7 +157,7 @@ func main() {
 			r.ShopShareCents, r.NetProfitCents)
 	}
 
-	fmt.Println("\n--- xg.Batcher 批量调用 + 延迟对比 ---")
+	fmt.Println("\n--- zp.Batcher 批量调用 + 延迟对比 ---")
 	benchmarkBatcher(1000, 20*time.Millisecond)
 	fmt.Println()
 	benchmarkBatcher(5000, 50*time.Millisecond)
@@ -199,7 +199,7 @@ func benchmarkBatcher(n int, maxWait time.Duration) {
 		fmt.Printf("  batch:  N=%d total=%v avg=%v\n", n, elapsed, elapsed/time.Duration(n))
 	}
 
-	// xg.Batcher 自带攒批（模拟高并发）
+	// zp.Batcher 自带攒批（模拟高并发）
 	batcher := zp.NewBatcher(
 		64,
 		maxWait,
