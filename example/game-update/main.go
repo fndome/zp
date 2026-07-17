@@ -118,7 +118,13 @@ func newGameUpdateBatcher() *zp.Batcher[StatDelta, BatchResult] {
 			// 4. 批量写回
 			updated := dbUpdate(latest)
 
-			return []BatchResult{{Updated: updated, Elapsed: time.Since(t0)}}, nil
+			// 每个输入必须对应一个结果，数量必须与 batch 一致
+			res := BatchResult{Updated: updated, Elapsed: time.Since(t0)}
+			results := make([]BatchResult, len(batch))
+			for i := range results {
+				results[i] = res
+			}
+			return results, nil
 		},
 	)
 }
