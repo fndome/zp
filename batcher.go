@@ -157,6 +157,11 @@ func (b *Batcher[T, R]) run() {
 					return
 				}
 				batch = append(batch, req)
+				if len(batch) >= b.batchSize {
+					b.flush(batch)
+					batch = nil
+					continue
+				}
 				timer = time.NewTimer(b.maxWait)
 				continue
 			}

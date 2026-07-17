@@ -69,6 +69,28 @@ func TestBasicBatch(t *testing.T) {
 	wg.Wait()
 }
 
+func TestBatchSizeOneFlushesImmediately(t *testing.T) {
+	b := NewBatcher(1, time.Hour, func(ctx context.Context, batch []int) ([]int, error) {
+		out := make([]int, len(batch))
+		for i, v := range batch {
+			out[i] = v + 1
+		}
+		return out, nil
+	})
+	defer b.Stop()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	r, err := b.Submit(ctx, 41)
+	if err != nil {
+		t.Fatalf("Submit err: %v", err)
+	}
+	if r != 42 {
+		t.Fatalf("r = %d, want 42", r)
+	}
+}
+
 func TestSubmitAfterStop(t *testing.T) {
 	b := NewBatcher(2, 10*time.Millisecond, func(ctx context.Context, batch []int) ([]int, error) {
 		return batch, nil
